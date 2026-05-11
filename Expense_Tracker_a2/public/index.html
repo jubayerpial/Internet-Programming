@@ -1,0 +1,1858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense Tracker</title>
+  //Chart.js
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --bg2: #161922;
+      --card: rgba(255,255,255,0.05);
+      --card-border: rgba(255,255,255,0.10);
+      --accent: #00d4ff;
+      --accent2: #7c6af7;
+      --danger: #ff4f6d;
+      --success: #00e5a0;
+      --warn: #ffb347;
+      --text: #e8ecf0;
+      --muted: #7a8599;
+      --input-bg: rgba(255,255,255,0.07);
+      --radius: 14px;
+      --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .light-mode {
+      --bg: #f0f2f8;
+      --bg2: #e4e8f0;
+      --card: rgba(255,255,255,0.75);
+      --card-border: rgba(0,0,0,0.08);
+      --text: #1a1f2e;
+      --muted: #6b7280;
+      --input-bg: rgba(0,0,0,0.06);
+    }
+
+    html, body { height: 100%; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
+      min-height: 100vh;
+    }
+
+    /*AUTH SCREEN — SINGLE CENTERED CARD WITH TWO PORTAL BUTTONS*/
+
+    #auth-screen {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(0,212,255,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(124,106,247,0.08) 0%, transparent 60%),
+        var(--bg);
+    }
+
+    .auth-brand {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .auth-brand h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+    .auth-brand p { color: var(--muted); font-size: 0.9rem; margin-top: 6px; }
+
+    /* Portal selector — two big buttons */
+
+    .portal-selector {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 28px;
+      width: 100%;
+      max-width: 480px;
+    }
+    .portal-btn {
+      flex: 1;
+      padding: 18px 12px;
+      border: 2px solid var(--card-border);
+      border-radius: 16px;
+      background: var(--card);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .portal-btn .portal-icon { font-size: 1.8rem; }
+    .portal-btn .portal-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
+    .portal-btn:hover {
+      border-color: var(--card-border);
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+    }
+    .portal-btn.active-user {
+      border-color: var(--accent);
+      background: rgba(0,212,255,0.08);
+      color: var(--accent);
+    }
+    .portal-btn.active-admin {
+      border-color: var(--accent2);
+      background: rgba(124,106,247,0.10);
+      color: var(--accent2);
+    }
+
+    /* Auth box */
+
+    .auth-box {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: var(--shadow);
+      transition: border-color 0.2s;
+    }
+    .auth-box.admin-mode { border-color: rgba(124,106,247,0.3); }
+
+    .portal-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .portal-indicator.user-ind {
+      background: rgba(0,212,255,0.1);
+      color: var(--accent);
+      border: 1px solid rgba(0,212,255,0.2);
+    }
+    .portal-indicator.admin-ind {
+      background: rgba(124,106,247,0.12);
+      color: var(--accent2);
+      border: 1px solid rgba(124,106,247,0.25);
+    }
+
+    .auth-heading { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+    .auth-subhead { color: var(--muted); font-size: 0.85rem; margin-bottom: 24px; }
+
+    .auth-tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--input-bg);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 9px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .auth-tab.active { background: var(--accent); color: #000; }
+    .admin-mode .auth-tab.active { background: var(--accent2); color: #fff; }
+
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 5px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 11px 13px;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 0.92rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--accent);
+    }
+    .admin-mode .form-group input:focus,
+    .admin-mode .form-group select:focus { border-color: var(--accent2); }
+    .form-group select option { background: #1a1f2e; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 11px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn-admin-primary {
+      background: linear-gradient(135deg, var(--accent2), #c084fc);
+      color: #fff;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn-primary:hover, .btn-admin-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { opacity: 0.85; }
+    .btn-success { background: var(--success); color: #000; }
+    .btn-ghost {
+      background: var(--input-bg);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.1); }
+    .btn-sm { padding: 7px 14px; font-size: 0.82rem; border-radius: 8px; }
+
+    .auth-err {
+      background: rgba(255,79,109,0.15);
+      border: 1px solid rgba(255,79,109,0.3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      color: var(--danger);
+      margin-bottom: 12px;
+      display: none;
+    }
+    .auth-note {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .auth-note strong { color: var(--accent); }
+    .admin-mode .auth-note strong { color: var(--accent2); }
+
+    #auth-screen { display: flex; }
+    #auth-screen.hidden { display: none !important; }
+    #app-screen { display: none; }
+    #app-screen.visible { display: block; }
+
+    /* MAIN-APP LAYOUT */
+    .sidebar {
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      width: 240px;
+      background: var(--bg2);
+      border-right: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      transition: transform 0.3s;
+    }
+    .sidebar-logo {
+      padding: 24px 20px 16px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .sidebar-logo h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .sidebar-logo .version { font-size: 0.7rem; color: var(--muted); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.15s;
+      margin-bottom: 4px;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+    .nav-item:hover { background: var(--card); color: var(--text); }
+    .nav-item.active { background: rgba(0,212,255,0.1); color: var(--accent); }
+    .nav-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+    .sidebar-footer {
+      padding: 16px 12px;
+      border-top: 1px solid var(--card-border);
+    }
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--card);
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+    .user-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #000;
+      flex-shrink: 0;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-info .uname { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-info .urole { font-size: 0.72rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; }
+    .sidebar-actions { display: flex; gap: 6px; }
+
+    .main-content {
+      margin-left: 240px;
+      padding: 28px 32px;
+      min-height: 100vh;
+    }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* TOPBAR */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .topbar h2 { font-size: 1.5rem; font-weight: 700; }
+    .topbar-right { display: flex; gap: 10px; align-items: center; }
+
+    /* SUMMARY CARDS */
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 20px;
+      backdrop-filter: blur(10px);
+    }
+    .card-label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+    .card-value { font-size: 1.8rem; font-weight: 700; }
+    .card-value.cyan { color: var(--accent); }
+    .card-value.purple { color: var(--accent2); }
+    .card-value.green { color: var(--success); }
+    .card-value.orange { color: var(--warn); }
+    .card-sub { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+    /* CHARTS GRID — 3 charts on dashboard */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+    .charts-grid .chart-card.wide {
+      grid-column: 1 / -1;
+    }
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .chart-card h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 16px; color: var(--muted); }
+    .chart-wrap { position: relative; height: 220px; }
+    .chart-wrap.tall { height: 180px; }
+
+    /* TOOLBAR */
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-wrap input {
+      width: 100%;
+      padding: 10px 14px 10px 38px;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .toolbar select {
+      padding: 10px 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 0.88rem;
+      outline: none;
+      cursor: pointer;
+    }
+    .toolbar select option { background: #1a1f2e; }
+
+    /* EXPENSE TABLE */
+    .table-wrap {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--card-border);
+      background: var(--bg2);
+    }
+    tbody tr {
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: background 0.15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.03); }
+    tbody td { padding: 13px 16px; font-size: 0.9rem; }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .action-btns { display: flex; gap: 6px; }
+    .empty-state {
+      text-align: center;
+      padding: 48px;
+      color: var(--muted);
+    }
+    .empty-state .icon { font-size: 2rem; margin-bottom: 10px; }
+
+    /* MODAL */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 500;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--bg2);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 32px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: var(--shadow);
+      animation: slideUp 0.2s ease;
+    }
+    @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .modal-header h3 { font-size: 1.1rem; font-weight: 700; }
+    .modal-close { background: none; border: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; line-height: 1; padding: 0; }
+    .modal-close:hover { color: var(--text); }
+    .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+    /* ADMIN PANELS */
+    .admin-user-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 10px;
+      transition: background 0.15s;
+    }
+    .admin-user-card:hover { background: rgba(255,255,255,0.06); }
+    .admin-user-card .info { flex: 1; }
+    .admin-user-card .uname { font-weight: 600; font-size: 0.95rem; }
+    .admin-user-card .umeta { font-size: 0.8rem; color: var(--muted); }
+    .role-badge {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .role-badge.admin { background: rgba(124,106,247,0.2); color: var(--accent2); }
+    .role-badge.user { background: rgba(0,212,255,0.1); color: var(--accent); }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+    }
+    .status-dot.active { background: var(--success); }
+    .status-dot.inactive { background: var(--danger); }
+
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-icon {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .activity-item .meta { font-size: 0.8rem; color: var(--muted); }
+
+    /* MISC UTILITIES */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--bg2);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      z-index: 9999;
+      box-shadow: var(--shadow);
+      display: none;
+      animation: slideUp 0.2s ease;
+      max-width: 320px;
+    }
+    .toast.show { display: block; }
+    .toast.ok { border-color: var(--success); color: var(--success); }
+    .toast.err { border-color: var(--danger); color: var(--danger); }
+
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 14px;
+    }
+
+    .hamburger { display: none; background: none; border: none; color: var(--text); font-size: 1.4rem; cursor: pointer; }
+
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-left: 0; padding: 20px 16px; }
+      .hamburger { display: block; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .charts-grid .chart-card.wide { grid-column: 1; }
+      .cards-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 540px) {
+      .cards-grid { grid-template-columns: 1fr; }
+      .portal-selector { flex-direction: column; }
+      thead th:nth-child(3), tbody td:nth-child(3),
+      thead th:nth-child(4), tbody td:nth-child(4) { display: none; }
+    }
+
+    .cat-Food { background: rgba(255,179,71,0.15); color: #ffb347; }
+    .cat-Transport { background: rgba(0,212,255,0.12); color: #00d4ff; }
+    .cat-Entertainment { background: rgba(124,106,247,0.15); color: #a78ff5; }
+    .cat-Bills { background: rgba(255,79,109,0.12); color: #ff4f6d; }
+    .cat-Education { background: rgba(0,229,160,0.12); color: #00e5a0; }
+    .cat-Health { background: rgba(46,213,115,0.12); color: #2ed573; }
+    .cat-Shopping { background: rgba(255,107,107,0.12); color: #ff6b6b; }
+    .cat-Travel { background: rgba(255,159,67,0.12); color: #ff9f43; }
+    .cat-Other { background: rgba(122,133,153,0.15); color: #9aa3b2; }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      background: rgba(0,0,0,0.5);
+    }
+    .sidebar-overlay.show { display: block; }
+
+    /* Invite token cards */
+    .invite-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .invite-card .token-str {
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      color: var(--accent2);
+      background: rgba(124,106,247,0.1);
+      border: 1px solid rgba(124,106,247,0.2);
+      border-radius: 8px;
+      padding: 5px 10px;
+      letter-spacing: 0.5px;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .invite-card .token-str:hover { background: rgba(124,106,247,0.2); }
+    .invite-card .token-meta { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+    .token-status {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .token-status.valid   { background: rgba(0,229,160,0.12); color: var(--success); }
+    .token-status.used    { background: rgba(122,133,153,0.15); color: var(--muted); }
+    .token-status.expired { background: rgba(255,79,109,0.12); color: var(--danger); }
+
+    /* Copy flash */
+    @keyframes copyFlash {
+      0%   { background: rgba(124,106,247,0.4); }
+      100% { background: rgba(124,106,247,0.1); }
+    }
+    .copy-flash { animation: copyFlash 0.4s ease; }
+  </style>
+</head>
+<body>
+
+<!-- AUTH SCREEN — SINGLE PAGE, TWO PORTAL BUTTONS -->
+<div id="auth-screen">
+
+  <!-- Brand -->
+  <div class="auth-brand">
+    <h1>Expense Tracker</h1>
+    <p>Choose your portal to continue</p>
+  </div>
+
+  <!-- Portal selector buttons -->
+  <div class="portal-selector">
+    <button class="portal-btn active-user" id="btn-user-portal" onclick="selectPortal('user')">
+      <span class="portal-icon">&#128100;</span>
+      <span style="font-size:1rem;font-weight:700">User Portal</span>
+      <span class="portal-label">Sign in or Register</span>
+    </button>
+    <button class="portal-btn" id="btn-admin-portal" onclick="selectPortal('admin')">
+      <span class="portal-icon">&#128737;</span>
+      <span style="font-size:1rem;font-weight:700">Admin Portal</span>
+      <span class="portal-label">Administrator Access</span>
+    </button>
+  </div>
+
+  <!-- Single auth box, content swaps based on portal -->
+  <div class="auth-box" id="auth-box">
+
+    <!-- USER PORTAL CONTENT -->
+    <div id="user-portal-content">
+      <div class="portal-indicator user-ind">&#128100; User Portal</div>
+      <div class="auth-heading">Welcome Back</div>
+      <div class="auth-subhead">Sign in to manage your expenses</div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchTab('login','user')">Sign In</button>
+        <button class="auth-tab" onclick="switchTab('register','user')">Register</button>
+      </div>
+      <div id="user-auth-err" class="auth-err"></div>
+
+      <!-- User Login -->
+      <div id="user-login-form">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password"
+            onkeydown="if(event.key==='Enter') doLogin()" />
+        </div>
+        <button class="btn btn-primary" onclick="doLogin()">Sign In</button>
+        <p class="auth-note">Don't have an account? Switch to <strong>Register</strong> above.</p>
+      </div>
+
+      <!-- User Register -->
+      <div id="user-register-form" style="display:none">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="reg-name" placeholder="Your name" />
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="reg-email" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="reg-password" placeholder="Minimum 6 characters" autocomplete="new-password" />
+        </div>
+        <button class="btn btn-primary" onclick="doRegister()">Create Account</button>
+        <p class="auth-note">&#9733; <strong>First registered user</strong> is automatically promoted to Admin.</p>
+      </div>
+    </div>
+
+    <!-- ADMIN PORTAL CONTENT -->
+    <div id="admin-portal-content" style="display:none">
+      <div class="portal-indicator admin-ind">&#128737; Admin Portal</div>
+      <div class="auth-heading">Administrator</div>
+      <div class="auth-subhead">Restricted access &mdash; authorised personnel only</div>
+
+      <div class="auth-tabs" id="admin-auth-tabs">
+        <button class="auth-tab active" onclick="switchAdminTab('login')">Sign In</button>
+        <button class="auth-tab" onclick="switchAdminTab('register')">Register with Token</button>
+      </div>
+
+      <div id="admin-auth-err" class="auth-err"></div>
+
+      <!-- Admin Login -->
+      <div id="admin-login-form">
+        <div class="form-group">
+          <label>Admin Email</label>
+          <input type="email" id="admin-login-email" placeholder="admin@example.com" autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="admin-login-password" placeholder="Enter admin password" autocomplete="current-password"
+            onkeydown="if(event.key==='Enter') doAdminLogin()" />
+        </div>
+        <button class="btn btn-admin-primary" onclick="doAdminLogin()">Sign In as Admin</button>
+        <div style="margin-top:16px;padding:12px 14px;background:rgba(124,106,247,0.08);border:1px solid rgba(124,106,247,0.2);border-radius:10px;font-size:0.82rem;color:var(--muted);line-height:1.6;">
+          <strong style="color:var(--accent2);">&#9432; How to get admin access:</strong><br>
+          Go to the <strong style="color:var(--accent);">User Portal</strong> and register — the <strong style="color:var(--accent);">first user</strong> becomes admin automatically.
+          Or use the <strong style="color:var(--accent2);">Register with Token</strong> tab if an existing admin gave you an invite token.
+        </div>
+      </div>
+
+      <!-- Admin Register via invite token -->
+      <div id="admin-register-form" style="display:none">
+        <div class="form-group">
+          <label>Invite Token <span style="color:var(--accent2)">*</span></label>
+          <input type="text" id="admin-reg-token" placeholder="Paste invite token from existing admin" />
+        </div>
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="admin-reg-name" placeholder="Your name" />
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="admin-reg-email" placeholder="admin@example.com" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="admin-reg-password" placeholder="Minimum 6 characters" />
+        </div>
+        <button class="btn btn-admin-primary" onclick="doAdminRegister()">Create Admin Account</button>
+        <p class="auth-note">Invite tokens are <strong>single-use</strong> and expire after 24 hours.</p>
+      </div>
+    </div>
+
+  </div><!-- /.auth-box -->
+
+</div><!-- /#auth-screen -->
+
+<!-- MAIN APP -->
+<div id="app-screen">
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <h2>Expense Tracker</h2>
+      <div class="version"></div>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">
+        <span class="icon">&#9783;</span> Dashboard
+      </button>
+      <button class="nav-item" data-page="expenses" onclick="navigateTo('expenses')">
+        <span class="icon">&#9776;</span> My Expenses
+      </button>
+      <button class="nav-item admin-only" data-page="admin-users" onclick="navigateTo('admin-users')" style="display:none">
+        <span class="icon">&#9752;</span> Manage Users
+      </button>
+      <button class="nav-item admin-only" data-page="admin-activity" onclick="navigateTo('admin-activity')" style="display:none">
+        <span class="icon">&#9998;</span> Activity Log
+      </button>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar" id="sidebar-avatar">?</div>
+        <div class="user-info">
+          <div class="uname" id="sidebar-name">Loading...</div>
+          <div class="urole" id="sidebar-role">user</div>
+        </div>
+      </div>
+      <div class="sidebar-actions">
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="toggleDark()">Theme</button>
+        <button class="btn btn-danger btn-sm" onclick="doLogout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main-content">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="hamburger" onclick="openSidebar()">&#9776;</button>
+        <h2 id="page-title">Dashboard</h2>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-primary btn-sm" onclick="openExpenseModal()" id="add-expense-btn">
+          + Add Expense
+        </button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div class="cards-grid" id="summary-cards">
+        <div class="card"><div class="card-label">Total Expenses</div><div class="card-value cyan" id="card-total">$0</div><div class="card-sub" id="card-count">0 records</div></div>
+        <div class="card"><div class="card-label">This Month</div><div class="card-value purple" id="card-month">$0</div><div class="card-sub" id="card-month-count">0 this month</div></div>
+        <div class="card"><div class="card-label">Top Category</div><div class="card-value orange" id="card-cat">—</div><div class="card-sub" id="card-cat-sub">by spending</div></div>
+        <div class="card"><div class="card-label">Average per Expense</div><div class="card-value green" id="card-avg">$0</div><div class="card-sub">across all records</div></div>
+      </div>
+
+      <!-- Charts: donut + bar side by side, then line chart full width -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Spending by Category</h3>
+          <div class="chart-wrap"><canvas id="chart-category"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Monthly Bar</h3>
+          <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
+        </div>
+        <div class="chart-card wide">
+          <h3>Spending Trend — Line Chart</h3>
+          <div class="chart-wrap tall"><canvas id="chart-line"></canvas></div>
+        </div>
+      </div>
+
+      <div class="section-title">Recent Expenses</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Title</th><th>Category</th><th>Date</th><th>Amount</th></tr></thead>
+          <tbody id="recent-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- EXPENSES PAGE -->
+    <div class="page" id="page-expenses">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">&#128269;</span>
+          <input type="text" id="search-input" placeholder="Search expenses..." oninput="onSearch()" />
+        </div>
+        <select id="filter-category" onchange="loadExpenses()">
+          <option value="All">All Categories</option>
+          <option>Food</option><option>Transport</option><option>Entertainment</option>
+          <option>Bills</option><option>Education</option><option>Health</option>
+          <option>Shopping</option><option>Travel</option><option>Other</option>
+        </select>
+        <select id="filter-month" onchange="loadExpenses()">
+          <option value="">All Months</option>
+        </select>
+        <select id="sort-by" onchange="loadExpenses()">
+          <option value="date_desc">Date (Newest)</option>
+          <option value="date_asc">Date (Oldest)</option>
+          <option value="amount_desc">Amount (High–Low)</option>
+          <option value="amount_asc">Amount (Low–High)</option>
+          <option value="title_asc">Title A–Z</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Title</th><th>Category</th><th>Date</th><th>Amount</th><th>Description</th><th>Actions</th></tr></thead>
+          <tbody id="expenses-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADMIN USERS PAGE -->
+    <div class="page" id="page-admin-users">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="section-title" style="margin-bottom:0">All Users</div>
+      </div>
+      <div id="admin-users-list"></div>
+
+      <!-- Invite Token Management -->
+      <div style="margin-top:32px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div class="section-title" style="margin-bottom:0">Admin Invite Tokens</div>
+          <button class="btn btn-sm" style="background:linear-gradient(135deg,var(--accent2),#c084fc);color:#fff;font-weight:600;" onclick="generateInviteToken()">
+            + Generate Token
+          </button>
+        </div>
+        <div id="invite-tokens-list">
+          <p style="color:var(--muted);font-size:0.88rem;">Loading tokens...</p>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div style="margin-top:40px;">
+        <div class="section-title" style="color:var(--danger);margin-bottom:14px;">&#9888; Danger Zone</div>
+        <div style="background:rgba(255,79,109,0.06);border:1px solid rgba(255,79,109,0.25);border-radius:var(--radius);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+          <div>
+            <div style="font-weight:600;font-size:0.95rem;margin-bottom:4px;">Reset Entire Database</div>
+            <div style="font-size:0.82rem;color:var(--muted);">Permanently deletes all users, expenses, activity logs, and invite tokens. Cannot be undone.</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="openResetModal()" style="white-space:nowrap;">Reset Database</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN ACTIVITY PAGE -->
+    <div class="page" id="page-admin-activity">
+      <div class="toolbar">
+        <select id="activity-user-filter" onchange="loadActivities()" style="min-width:200px">
+          <option value="">All Users</option>
+        </select>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:16px 20px" id="activity-list"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- EXPENSE MODAL -->
+<div class="modal-backdrop" id="expense-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Add Expense</h3>
+      <button class="modal-close" onclick="closeModal('expense-modal')">&times;</button>
+    </div>
+    <div class="form-group">
+      <label>Title *</label>
+      <input type="text" id="exp-title" placeholder="e.g. Groceries" />
+    </div>
+    <div class="form-group">
+      <label>Category *</label>
+      <select id="exp-category">
+        <option>Food</option><option>Transport</option><option>Entertainment</option>
+        <option>Bills</option><option>Education</option><option>Health</option>
+        <option>Shopping</option><option>Travel</option><option>Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Amount ($) *</label>
+      <input type="number" id="exp-amount" placeholder="0.00" step="0.01" min="0.01" />
+    </div>
+    <div class="form-group">
+      <label>Date *</label>
+      <input type="date" id="exp-date" />
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="exp-desc" rows="2" placeholder="Optional note..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('expense-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveExpense()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div class="modal-backdrop" id="delete-modal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <h3>Delete Expense</h3>
+      <button class="modal-close" onclick="closeModal('delete-modal')">&times;</button>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem">Are you sure you want to delete <strong id="delete-name" style="color:var(--text)"></strong>? This action cannot be undone.</p>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('delete-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN EDIT USER MODAL -->
+<div class="modal-backdrop" id="edit-user-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Edit User</h3>
+      <button class="modal-close" onclick="closeModal('edit-user-modal')">&times;</button>
+    </div>
+    <input type="hidden" id="edit-user-id" />
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="edit-user-name" />
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="edit-user-email" />
+    </div>
+    <div class="form-group">
+      <label>Role</label>
+      <select id="edit-user-role">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="edit-user-active">
+        <option value="true">Active</option>
+        <option value="false">Deactivated</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('edit-user-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditUser()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- DATABASE RESET MODAL -->
+<div class="modal-backdrop" id="reset-db-modal">
+  <div class="modal" style="max-width:440px;border-color:rgba(255,79,109,0.35);">
+    <div class="modal-header">
+      <h3 style="color:var(--danger);">&#9888; Reset Database</h3>
+      <button class="modal-close" onclick="closeModal('reset-db-modal')">&times;</button>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-bottom:16px;line-height:1.6;">
+      This will permanently delete <strong style="color:var(--text)">all users, expenses, activity logs, and invite tokens</strong>.
+      The app will return to a fresh state — the next account registered will become Admin.
+    </p>
+    <p style="color:var(--muted);font-size:0.9rem;margin-bottom:16px;">
+      Type <strong style="color:var(--danger);font-family:monospace;">RESET EVERYTHING</strong> to confirm:
+    </p>
+    <div class="form-group">
+      <input type="text" id="reset-confirm-input" placeholder="RESET EVERYTHING" autocomplete="off"
+        style="border-color:rgba(255,79,109,0.3);"
+        oninput="document.getElementById('reset-confirm-btn').disabled = this.value !== 'RESET EVERYTHING'" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('reset-db-modal')">Cancel</button>
+      <button class="btn btn-danger" id="reset-confirm-btn" disabled onclick="confirmResetDatabase()">&#128465; Reset Everything</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+
+
+//  STATE
+let token = localStorage.getItem('et_token') || '';
+let currentUser = null;
+let editingExpenseId = null;
+let deletingExpenseId = null;
+let searchTimer = null;
+let catChart = null, monthChart = null, lineChart = null;
+let activePortal = 'user';
+
+const API = '';  // same-origin
+
+//  PORTAL SELECTION
+function selectPortal(portal) {
+  activePortal = portal;
+  const userBtn = document.getElementById('btn-user-portal');
+  const adminBtn = document.getElementById('btn-admin-portal');
+  const box = document.getElementById('auth-box');
+  const userContent = document.getElementById('user-portal-content');
+  const adminContent = document.getElementById('admin-portal-content');
+
+  if (portal === 'user') {
+    userBtn.className = 'portal-btn active-user';
+    adminBtn.className = 'portal-btn';
+    box.classList.remove('admin-mode');
+    userContent.style.display = '';
+    adminContent.style.display = 'none';
+  } else {
+    adminBtn.className = 'portal-btn active-admin';
+    userBtn.className = 'portal-btn';
+    box.classList.add('admin-mode');
+    adminContent.style.display = '';
+    userContent.style.display = 'none';
+  }
+  clearAuthErr('user');
+  clearAuthErr('admin');
+}
+
+//  AUTH HELPERS
+function switchTab(tab, panel) {
+  if (panel === 'user') {
+    const tabs = document.querySelectorAll('#user-portal-content .auth-tab');
+    tabs[0].classList.toggle('active', tab === 'login');
+    tabs[1].classList.toggle('active', tab === 'register');
+    document.getElementById('user-login-form').style.display = tab === 'login' ? '' : 'none';
+    document.getElementById('user-register-form').style.display = tab === 'register' ? '' : 'none';
+    clearAuthErr('user');
+  }
+}
+
+function showAuthErr(msg, panel) {
+  const id = panel === 'admin' ? 'admin-auth-err' : 'user-auth-err';
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = '';
+}
+function clearAuthErr(panel) {
+  const id = panel === 'admin' ? 'admin-auth-err' : 'user-auth-err';
+  const el = document.getElementById(id);
+  if (el) el.style.display = 'none';
+}
+
+async function doLogin() {
+  clearAuthErr('user');
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-password').value;
+  if (!email || !pass) return showAuthErr('Please fill in all fields.', 'user');
+  try {
+    const res = await fetch(`${API}/api/auth/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password: pass })
+    });
+    const data = await res.json();
+    if (!data.success) return showAuthErr(data.message, 'user');
+    token = data.token;
+    currentUser = data.user;
+    localStorage.setItem('et_token', token);
+    enterApp();
+  } catch(e) { showAuthErr('Server unreachable. Ensure the backend is running.', 'user'); }
+}
+
+async function doAdminLogin() {
+  clearAuthErr('admin');
+  const email = document.getElementById('admin-login-email').value.trim();
+  const pass = document.getElementById('admin-login-password').value;
+  if (!email || !pass) return showAuthErr('Please fill in all fields.', 'admin');
+  try {
+    const res = await fetch(`${API}/api/auth/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password: pass })
+    });
+    const data = await res.json();
+    if (!data.success) return showAuthErr(data.message, 'admin');
+    if (data.user.role !== 'admin') {
+      return showAuthErr('Access denied — your account is not an admin. The first registered user becomes admin. Try logging in via the User Portal instead.', 'admin');
+    }
+    token = data.token;
+    currentUser = data.user;
+    localStorage.setItem('et_token', token);
+    enterApp();
+  } catch(e) { showAuthErr('Server unreachable. Ensure the backend is running.', 'admin'); }
+}
+
+async function doRegister() {
+  clearAuthErr('user');
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-password').value;
+  if (!name || !email || !pass) return showAuthErr('All fields are required.', 'user');
+  if (pass.length < 6) return showAuthErr('Password must be at least 6 characters.', 'user');
+  try {
+    const res = await fetch(`${API}/api/auth/register`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ name, email, password: pass })
+    });
+    const data = await res.json();
+    if (!data.success) return showAuthErr(data.message, 'user');
+    token = data.token;
+    currentUser = data.user;
+    localStorage.setItem('et_token', token);
+    enterApp();
+  } catch(e) { showAuthErr('Server unreachable.', 'user'); }
+}
+
+async function doLogout() {
+  try { await authFetch('/api/auth/logout', { method:'POST' }); } catch(e) {}
+  token = ''; currentUser = null;
+  localStorage.removeItem('et_token');
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('app-screen').classList.remove('visible');
+  selectPortal('user');
+}
+
+//  APP INIT
+async function enterApp() {
+  if (!currentUser) {
+    try {
+      const res = await authFetch('/api/auth/me');
+      const data = await res.json();
+      if (!data.success) { doLogout(); return; }
+      currentUser = data.user;
+    } catch(e) { doLogout(); return; }
+  }
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('app-screen').classList.add('visible');
+  document.getElementById('sidebar-name').textContent = currentUser.name;
+  document.getElementById('sidebar-role').textContent = currentUser.role;
+  document.getElementById('sidebar-avatar').textContent = currentUser.name[0].toUpperCase();
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = currentUser.role === 'admin' ? '' : 'none';
+  });
+  populateMonthFilter();
+  navigateTo('dashboard');
+}
+
+function populateMonthFilter() {
+  const sel = document.getElementById('filter-month');
+  sel.innerHTML = '<option value="">All Months</option>';
+  const now = new Date();
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const label = d.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
+    sel.innerHTML += `<option value="${val}">${label}</option>`;
+  }
+}
+
+//  NAVIGATION
+function navigateTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+  document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
+  const titles = { dashboard:'Dashboard', expenses:'My Expenses', 'admin-users':'Manage Users', 'admin-activity':'Activity Log' };
+  document.getElementById('page-title').textContent = titles[page] || page;
+  closeSidebar();
+  if (page === 'dashboard') loadDashboard();
+  if (page === 'expenses') loadExpenses();
+  if (page === 'admin-users') { loadAdminUsers(); loadInviteTokens(); }
+  if (page === 'admin-activity') { loadActivityUserFilter(); loadActivities(); }
+}
+
+// ================================================================
+//  FETCH HELPER
+// ================================================================
+function authFetch(url, opts = {}) {
+  opts.headers = { ...(opts.headers||{}), 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+  return fetch(API + url, opts);
+}
+
+// ================================================================
+//  DASHBOARD
+// ================================================================
+async function loadDashboard() {
+  try {
+    const res = await authFetch('/api/expenses');
+    const data = await res.json();
+    if (!data.success) return;
+    const expenses = data.data;
+    const total = expenses.reduce((s,e) => s + e.amount, 0);
+    const now = new Date();
+    const thisMonth = expenses.filter(e => {
+      const d = new Date(e.date);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    const monthTotal = thisMonth.reduce((s,e) => s + e.amount, 0);
+    const catTotals = {};
+    expenses.forEach(e => catTotals[e.category] = (catTotals[e.category]||0) + e.amount);
+    const topCat = Object.entries(catTotals).sort((a,b)=>b[1]-a[1])[0];
+    document.getElementById('card-total').textContent = fmt(total);
+    document.getElementById('card-count').textContent = `${expenses.length} records`;
+    document.getElementById('card-month').textContent = fmt(monthTotal);
+    document.getElementById('card-month-count').textContent = `${thisMonth.length} this month`;
+    document.getElementById('card-cat').textContent = topCat ? topCat[0] : '—';
+    document.getElementById('card-cat-sub').textContent = topCat ? fmt(topCat[1]) : '';
+    document.getElementById('card-avg').textContent = expenses.length ? fmt(total/expenses.length) : '$0';
+    renderCatChart(catTotals);
+    renderMonthChart(expenses);
+    renderLineChart(expenses);
+    const recent = [...expenses].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+    const tbody = document.getElementById('recent-tbody');
+    tbody.innerHTML = recent.map(e => `
+      <tr>
+        <td>${esc(e.title)}</td>
+        <td><span class="badge cat-${e.category}">${e.category}</span></td>
+        <td>${fmtDate(e.date)}</td>
+        <td style="color:var(--accent);font-weight:600">${fmt(e.amount)}</td>
+      </tr>`).join('') || '<tr><td colspan="4" class="empty-state">No expenses yet</td></tr>';
+  } catch(e) { console.error(e); }
+}
+
+function renderCatChart(catTotals) {
+  const ctx = document.getElementById('chart-category').getContext('2d');
+  if (catChart) catChart.destroy();
+  const cats = Object.keys(catTotals);
+  const vals = cats.map(c => catTotals[c]);
+  const colors = ['#ffb347','#00d4ff','#a78ff5','#ff4f6d','#00e5a0','#2ed573','#ff6b6b','#ff9f43','#9aa3b2'];
+  catChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels: cats, datasets: [{ data: vals, backgroundColor: colors.slice(0, cats.length), borderWidth: 0 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position:'right', labels:{ color:'#7a8599', font:{size:11}, boxWidth:12 } } }
+    }
+  });
+}
+
+function renderMonthChart(expenses) {
+  const ctx = document.getElementById('chart-monthly').getContext('2d');
+  if (monthChart) monthChart.destroy();
+  const monthly = {};
+  expenses.forEach(e => {
+    const d = new Date(e.date);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    monthly[key] = (monthly[key]||0) + e.amount;
+  });
+  const sorted = Object.keys(monthly).sort();
+  const labels = sorted.map(k => {
+    const [y,m] = k.split('-');
+    return new Date(y, m-1).toLocaleDateString('en-AU', {month:'short', year:'2-digit'});
+  });
+  monthChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data: sorted.map(k=>monthly[k]), backgroundColor: 'rgba(0,212,255,0.6)', borderRadius: 6, borderSkipped: false }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display:false } },
+      scales: {
+        x: { ticks:{ color:'#7a8599' }, grid:{ display:false } },
+        y: { ticks:{ color:'#7a8599', callback: v=>'$'+v }, grid:{ color:'rgba(255,255,255,0.05)' } }
+      }
+    }
+  });
+}
+
+function renderLineChart(expenses) {
+  const ctx = document.getElementById('chart-line').getContext('2d');
+  if (lineChart) lineChart.destroy();
+
+  // Group by date (daily cumulative or daily totals)
+  const daily = {};
+  expenses.forEach(e => {
+    const day = e.date.substring(0, 10);
+    daily[day] = (daily[day]||0) + e.amount;
+  });
+  const sortedDays = Object.keys(daily).sort();
+  const labels = sortedDays.map(d => {
+    const dt = new Date(d + 'T00:00:00');
+    return dt.toLocaleDateString('en-AU', { day:'2-digit', month:'short' });
+  });
+  const values = sortedDays.map(d => daily[d]);
+
+  lineChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Daily Spending',
+        data: values,
+        borderColor: '#7c6af7',
+        backgroundColor: 'rgba(124,106,247,0.12)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#7c6af7',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ' $' + Number(ctx.parsed.y).toFixed(2)
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#7a8599', maxTicksLimit: 10 },
+          grid: { display: false }
+        },
+        y: {
+          ticks: { color: '#7a8599', callback: v => '$' + v },
+          grid: { color: 'rgba(255,255,255,0.05)' }
+        }
+      }
+    }
+  });
+}
+
+//  EXPENSES PAGE
+function onSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(loadExpenses, 250);
+}
+
+async function loadExpenses() {
+  const search = document.getElementById('search-input').value.trim();
+  const category = document.getElementById('filter-category').value;
+  const month = document.getElementById('filter-month').value;
+  const sort = document.getElementById('sort-by').value;
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  if (category && category !== 'All') params.set('category', category);
+  if (month) params.set('month', month);
+  if (sort) params.set('sort', sort);
+  try {
+    const res = await authFetch(`/api/expenses?${params}`);
+    const data = await res.json();
+    if (!data.success) return;
+    renderExpensesTable(data.data);
+  } catch(e) { console.error(e); }
+}
+
+function renderExpensesTable(expenses) {
+  const tbody = document.getElementById('expenses-tbody');
+  if (!expenses.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">&#128269;</div><div>No expenses found</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = expenses.map(e => `
+    <tr>
+      <td style="font-weight:500">${esc(e.title)}</td>
+      <td><span class="badge cat-${e.category}">${e.category}</span></td>
+      <td>${fmtDate(e.date)}</td>
+      <td style="color:var(--accent);font-weight:600">${fmt(e.amount)}</td>
+      <td style="color:var(--muted);font-size:0.85rem">${esc(e.description||'')}</td>
+      <td>
+        <div class="action-btns">
+          <button class="btn btn-ghost btn-sm" onclick="openEditModal('${e._id}','${esc(e.title)}','${e.category}',${e.amount},'${e.date.substring(0,10)}','${esc(e.description||'')}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="openDeleteModal('${e._id}','${esc(e.title)}')">Delete</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+//  EXPENSE MODAL
+function getTodayString() {
+  return new Date().toISOString().substring(0, 10);
+}
+
+function openExpenseModal() {
+  editingExpenseId = null;
+  document.getElementById('modal-title').textContent = 'Add Expense';
+  document.getElementById('exp-title').value = '';
+  document.getElementById('exp-category').value = 'Food';
+  document.getElementById('exp-amount').value = '';
+  const dateInput = document.getElementById('exp-date');
+  dateInput.max = getTodayString();
+  dateInput.value = getTodayString();
+  document.getElementById('exp-desc').value = '';
+  openModal('expense-modal');
+}
+
+function openEditModal(id, title, cat, amount, date, desc) {
+  editingExpenseId = id;
+  document.getElementById('modal-title').textContent = 'Edit Expense';
+  document.getElementById('exp-title').value = title;
+  document.getElementById('exp-category').value = cat;
+  document.getElementById('exp-amount').value = amount;
+  const dateInput = document.getElementById('exp-date');
+  dateInput.max = getTodayString();
+  dateInput.value = date;
+  document.getElementById('exp-desc').value = desc;
+  openModal('expense-modal');
+}
+
+async function saveExpense() {
+  const title = document.getElementById('exp-title').value.trim();
+  const category = document.getElementById('exp-category').value;
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+  const date = document.getElementById('exp-date').value;
+  const description = document.getElementById('exp-desc').value.trim();
+
+  if (!title || !amount || !date) return showToast('Please fill in all required fields.', 'err');
+  if (isNaN(amount) || amount <= 0) return showToast('Amount must be greater than $0.', 'err');
+  if (date > getTodayString()) return showToast('Date cannot be in the future.', 'err');
+
+  const body = JSON.stringify({ title, category, amount, date, description });
+  try {
+    let res;
+    if (editingExpenseId) {
+      res = await authFetch(`/api/expenses/${editingExpenseId}`, { method:'PUT', body });
+    } else {
+      res = await authFetch('/api/expenses', { method:'POST', body });
+    }
+    const data = await res.json();
+    if (!data.success) return showToast(data.message, 'err');
+    closeModal('expense-modal');
+    showToast(editingExpenseId ? 'Expense updated.' : 'Expense added.', 'ok');
+    loadExpenses();
+    loadDashboard();
+  } catch(e) { showToast('Error saving expense.', 'err'); }
+}
+
+function openDeleteModal(id, title) {
+  deletingExpenseId = id;
+  document.getElementById('delete-name').textContent = title;
+  openModal('delete-modal');
+}
+
+async function confirmDelete() {
+  if (!deletingExpenseId) return;
+  try {
+    const res = await authFetch(`/api/expenses/${deletingExpenseId}`, { method:'DELETE' });
+    const data = await res.json();
+    if (!data.success) return showToast(data.message, 'err');
+    closeModal('delete-modal');
+    showToast('Expense deleted.', 'ok');
+    loadExpenses();
+    loadDashboard();
+  } catch(e) { showToast('Error deleting expense.', 'err'); }
+}
+
+//  DATABASE RESET
+function openResetModal() {
+  document.getElementById('reset-confirm-input').value = '';
+  document.getElementById('reset-confirm-btn').disabled = true;
+  openModal('reset-db-modal');
+}
+
+async function confirmResetDatabase() {
+  try {
+    const res = await authFetch('/api/admin/reset-database', {
+      method: 'POST',
+      body: JSON.stringify({ confirmation: 'RESET EVERYTHING' })
+    });
+    const data = await res.json();
+    if (!data.success) return showToast(data.message, 'err');
+    closeModal('reset-db-modal');
+    // Log out and return to auth screen — everything is wiped
+    token = ''; currentUser = null;
+    localStorage.removeItem('et_token');
+    document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('app-screen').classList.remove('visible');
+    selectPortal('user');
+    showToast('Database reset. Register a new account to become Admin.', 'ok');
+  } catch(e) { showToast('Error resetting database.', 'err'); }
+}
+
+//  ADMIN PORTAL TAB SWITCH
+function switchAdminTab(tab) {
+  const tabs = document.querySelectorAll('#admin-auth-tabs .auth-tab');
+  tabs[0].classList.toggle('active', tab === 'login');
+  tabs[1].classList.toggle('active', tab === 'register');
+  document.getElementById('admin-login-form').style.display = tab === 'login' ? '' : 'none';
+  document.getElementById('admin-register-form').style.display = tab === 'register' ? '' : 'none';
+  clearAuthErr('admin');
+}
+
+//  ADMIN REGISTER VIA INVITE TOKEN
+async function doAdminRegister() {
+  clearAuthErr('admin');
+  const token = document.getElementById('admin-reg-token').value.trim();
+  const name  = document.getElementById('admin-reg-name').value.trim();
+  const email = document.getElementById('admin-reg-email').value.trim();
+  const pass  = document.getElementById('admin-reg-password').value;
+  if (!token || !name || !email || !pass) return showAuthErr('All fields are required.', 'admin');
+  if (pass.length < 6) return showAuthErr('Password must be at least 6 characters.', 'admin');
+  try {
+    const res = await fetch(`${API}/api/auth/register-admin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password: pass, token })
+    });
+    const data = await res.json();
+    if (!data.success) return showAuthErr(data.message, 'admin');
+    window.token = data.token;
+    currentUser = data.user;
+    localStorage.setItem('et_token', data.token);
+    enterApp();
+  } catch(e) { showAuthErr('Server unreachable. Ensure the backend is running.', 'admin'); }
+}
+
+//  INVITE TOKENS
+async function generateInviteToken() {
+  try {
+    const res = await authFetch('/api/admin/invite', { method: 'POST' });
+    const data = await res.json();
+    if (!data.success) return showToast(data.message, 'err');
+    showToast('Invite token generated! Click it to copy.', 'ok');
+    loadInviteTokens();
+  } catch(e) { showToast('Error generating token.', 'err'); }
+}
+
+async function loadInviteTokens() {
+  const el = document.getElementById('invite-tokens-list');
+  if (!el) return;
+  try {
+    const res = await authFetch('/api/admin/invites');
+    const data = await res.json();
+    if (!data.success) { el.innerHTML = '<p style="color:var(--muted);font-size:0.88rem;">Could not load tokens.</p>'; return; }
+    if (!data.data.length) {
+      el.innerHTML = '<p style="color:var(--muted);font-size:0.88rem;">No invite tokens yet. Click "+ Generate Token" to create one.</p>';
+      return;
+    }
+    const now = new Date();
+    el.innerHTML = data.data.map(inv => {
+      let status = 'valid', statusLabel = 'Valid';
+      if (inv.used) { status = 'used'; statusLabel = 'Used'; }
+      else if (new Date(inv.expiresAt) < now) { status = 'expired'; statusLabel = 'Expired'; }
+      const createdBy = inv.createdBy ? inv.createdBy.name : 'Unknown';
+      const usedBy    = inv.usedBy    ? inv.usedBy.name    : null;
+      const expires   = new Date(inv.expiresAt).toLocaleString('en-AU', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+      return `<div class="invite-card" id="inv-${inv._id}">
+        <span class="token-str" title="Click to copy" onclick="copyToken(this, '${inv.token}')">${inv.token}</span>
+        <span class="token-status ${status}">${statusLabel}</span>
+        <span class="token-meta">
+          By <strong>${esc(createdBy)}</strong> &middot; Expires ${expires}
+          ${usedBy ? `&middot; Used by <strong>${esc(usedBy)}</strong>` : ''}
+        </span>
+        ${status !== 'used' ? `<button class="btn btn-danger btn-sm" onclick="revokeInviteToken('${inv._id}')">Revoke</button>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = '<p style="color:var(--muted);font-size:0.88rem;">Error loading tokens.</p>'; }
+}
+
+function copyToken(el, token) {
+  navigator.clipboard.writeText(token).then(() => {
+    el.classList.add('copy-flash');
+    setTimeout(() => el.classList.remove('copy-flash'), 400);
+    showToast('Token copied to clipboard!', 'ok');
+  }).catch(() => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = token;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Token copied!', 'ok');
+  });
+}
+
+async function revokeInviteToken(id) {
+  if (!confirm('Revoke this invite token? It will no longer be usable.')) return;
+  try {
+    const res = await authFetch(`/api/admin/invites/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!data.success) return showToast(data.message, 'err');
+    showToast('Token revoked.', 'ok');
+    loadInviteTokens();
+  } catch(e) { showToast('Error revoking token.', 'err'); }
+}
+async function loadAdminUsers() {
+  try {
+    const res = await authFetch('/api/admin/users');
+    const data = await res.json();
+    if (!data.success) return;
+    const el = document.getElementById('admin-users-list');
+    if (!data.data.length) { el.innerHTML = '<p style="color:var(--muted)">No users found.</p>'; return; }
+    el.innerHTML = data.data.map(u => `
+      <div class="admin-user-card">
+        <div class="user-avatar">${u.name[0].toUpperCase()}</div>
+        <div class="info">
+          <div class="uname">${esc(u.name)}
+            <span class="role-badge ${u.role}">${u.role}</span>
+            <span class="status-dot ${u.isActive?'active':'inactive'}"></span>
+          </div>
+          <div class="umeta">${esc(u.email)} &middot; ${u.expenseCount} expenses &middot; Joined ${fmtDate(u.createdAt)}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="openEditUser('${u._id}','${esc(u.name)}','${esc(u.email)}','${u.role}',${u.isActive})">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteUser('${u._id}','${esc(u.name)}')" ${u._id===currentUser._id?'disabled':''}>Delete</button>
+        </div>
+      </div>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+function openEditUser(id, name, email, role, isActive) {
+  document.getElementById('edit-user-id').value = id;
+  document.getElementById('edit-user-name').value = name;
+  document.getElementById('edit-user-email').value = email;
+  document.getElementById('edit-user-role').value = role;
+  document.getElementById('edit-user-active').value = String(isActive);
+  openModal('edit-user-modal');
+}
+
+async function saveEditUser() {
+  const id = document.getElementById('edit-user-id').value;
+  const body = JSON.stringify({
+    name: document.getElementById('edit-user-name').value.trim(),
+    email: document.getElementById('edit-user-email').value.trim(),
+    role: document.getElementById('edit-user-role').value,
+    isActive: document.getElementById('edit-user-active').value === 'true'
+  });
+  try {
+    const res = await authFetch(`/api/admin/users/${id}`, { method:'PUT', body });
+    const data = await res.json();
+    if (!data.success) return showToast(data.message, 'err');
+    closeModal('edit-user-modal');
+    showToast('User updated.', 'ok');
+    loadAdminUsers();
+  } catch(e) { showToast('Error updating user.', 'err'); }
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Delete user "${name}" and all their data?`)) return;
+  try {
+    const res = await authFetch(`/api/admin/users/${id}`, { method:'DELETE' });
+    const data = await res.json();
+    if (!data.success) return showToast(data.message, 'err');
+    showToast('User deleted.', 'ok');
+    loadAdminUsers();
+  } catch(e) { showToast('Error deleting user.', 'err'); }
+}
+
+//  ADMIN - ACTIVITY LOG
+async function loadActivityUserFilter() {
+  try {
+    const res = await authFetch('/api/admin/users');
+    const data = await res.json();
+    if (!data.success) return;
+    const sel = document.getElementById('activity-user-filter');
+    sel.innerHTML = '<option value="">All Users</option>';
+    data.data.forEach(u => {
+      sel.innerHTML += `<option value="${u._id}">${esc(u.name)} (${esc(u.email)})</option>`;
+    });
+  } catch(e) {}
+}
+
+async function loadActivities() {
+  const userId = document.getElementById('activity-user-filter').value;
+  const params = userId ? `?userId=${userId}` : '';
+  try {
+    const res = await authFetch(`/api/admin/activities${params}`);
+    const data = await res.json();
+    if (!data.success) return;
+    const el = document.getElementById('activity-list');
+    if (!data.data.length) { el.innerHTML = '<p style="color:var(--muted)">No activity yet.</p>'; return; }
+    const iconMap = {
+      login:          { label: 'Login',           color:'rgba(0,212,255,0.15)' },
+      logout:         { label: 'Logout',          color:'rgba(122,133,153,0.15)' },
+      register:       { label: 'Register',        color:'rgba(0,229,160,0.15)' },
+      create_expense: { label: 'Added Expense',   color:'rgba(0,229,160,0.15)' },
+      update_expense: { label: 'Edited Expense',  color:'rgba(255,179,71,0.15)' },
+      delete_expense: { label: 'Deleted Expense', color:'rgba(255,79,109,0.15)' }
+    };
+    el.innerHTML = data.data.map(a => {
+      const meta = iconMap[a.action] || { label: a.action, color:'rgba(255,255,255,0.05)' };
+      const user = a.user ? `${esc(a.user.name)} (${esc(a.user.email)})` : 'Unknown';
+      return `<div class="activity-item">
+        <div style="width:8px;height:8px;border-radius:50%;background:${meta.color};margin-top:6px;flex-shrink:0"></div>
+        <div style="flex:1">
+          <div style="font-size:0.88rem;font-weight:600">${user}</div>
+          <div class="meta">${meta.label}${a.detail ? ' &mdash; ' + a.detail : ''}</div>
+        </div>
+        <div style="font-size:0.78rem;color:var(--muted);white-space:nowrap">${fmtDateTime(a.createdAt)}</div>
+      </div>`;
+    }).join('');
+  } catch(e) { console.error(e); }
+}
+
+//  MODAL HELPERS
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-backdrop').forEach(bd => {
+  bd.addEventListener('click', e => { if (e.target === bd) bd.classList.remove('open'); });
+});
+
+//  SIDEBAR
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+}
+
+//  DARK / LIGHT MODE
+function toggleDark() {
+  document.body.classList.toggle('light-mode');
+  localStorage.setItem('et_theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+}
+
+//  TOAST
+let toastTimer;
+function showToast(msg, type = 'ok') {
+  clearTimeout(toastTimer);
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${type}`;
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+//  FORMAT HELPERS
+function fmt(n) { return '$' + Number(n).toLocaleString('en-AU', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
+function fmtDate(d) { return new Date(d).toLocaleDateString('en-AU', { day:'2-digit', month:'short', year:'numeric' }); }
+function fmtDateTime(d) { return new Date(d).toLocaleString('en-AU', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+//  BOOT
+async function boot() {
+  if (localStorage.getItem('et_theme') === 'light') document.body.classList.add('light-mode');
+  if (token) {
+    await enterApp();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>
